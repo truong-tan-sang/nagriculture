@@ -18,11 +18,14 @@ interface RiceGameContextType {
     setChartOpen: (v: boolean) => void;
     methods: string[];
     stages: string[];
+    sessionKey: string | null;
+    setSessionKey: (v: string | null) => void;
     stageColors: string[];
     amendments: { name: string; cfoa: number; range: string }[];
     seasons: { name: string; duration: number }[];
     weatherData: {
         season: string;
+        key: string;
         stages: {
             stage: number;
             weeks: { week: number; temp: number; rain: number; humidity: number }[];
@@ -46,6 +49,7 @@ export const useRiceGame = () => {
 export function RiceGameProvider({ children }: { children: React.ReactNode }) {
     const [step, setStep] = useState(0);
     const [method, setMethod] = useState<string | null>(null);
+    const [sessionKey, setSessionKey] = useState<string | null>(null);
     const [season, setSeason] = useState<any>(null);
     const [fertilizers, setFertilizers] = useState([
         { name: "", amount: 0 },
@@ -67,6 +71,7 @@ export function RiceGameProvider({ children }: { children: React.ReactNode }) {
                 water, setWater,
                 stage, setStage,
                 chartOpen, setChartOpen,
+                sessionKey, setSessionKey,
             }}
         >
             {children}

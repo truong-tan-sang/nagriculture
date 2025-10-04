@@ -26,7 +26,7 @@ export default function StepSelectMethod() {
                     <Grid key={i} size={4}>
                         <Box
                             onClick={() => {
-                                setMethod(m);
+                                setMethod(m.key);
                                 setStep(1);
                             }}
                             sx={{
@@ -39,7 +39,7 @@ export default function StepSelectMethod() {
                         >
                             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
                                 <Typography variant="h6" align="center">
-                                    {m}
+                                    {m.name}
                                 </Typography>
                             </Box>
                         </Box>

@@ -5,7 +5,8 @@ import { RiceGameContext } from "./RiceGameContext";
 export default function RiceGameProvider({ children }) {
     const [step, setStep] = useState(0);
     const [method, setMethod] = useState(null);
-    const [season, setSeason] = useState(null); 
+    const [season, setSeason] = useState(null);
+    const [sessionKey, setSessionKey] = useState(null);
     const [fertilizers, setFertilizers] = useState([
         { name: "", amount: 0 },
         { name: "", amount: 0 },
@@ -17,24 +18,25 @@ export default function RiceGameProvider({ children }) {
     const [chartOpen, setChartOpen] = useState(false);
 
     const methods = [
-        "Alternate Wetting and Drying (AWD)",
-        "Traditional method",
-        "Regular rainfed",
+        { id: 1, name: "Alternate Wetting and Drying (AWD)", key: "AWD" },
+        { id: 2, name: "Traditional method", key: "traditional_technique" },
+        { id: 3, name: "Regular rainfed", key: "regular_rainfed" },
     ];
 
     const stages = ["Seeding", "Growth", "Flowering", "Harvest"];
     const stageColors = ["#FFF59D", "#FFD54F", "#FFB300", "#FF8F00"];
 
     const amendments = [
-        { id: 1, name: "Straw (<30d before cultivation)", cfoa: 1.00, range: "0.85 - 1.17" },
-        { id: 2, name: "Straw (>30d before cultivation)", cfoa: 0.19, range: "0.11 - 0.28" },
-        { id: 3, name: "Compost", cfoa: 0.17, range: "0.09 - 0.29" },
-        { id: 4, name: "Farm yard manure", cfoa: 0.21, range: "0.15 - 0.28" },
-        { id: 5, name: "Green manure", cfoa: 0.45, range: "0.36 - 0.57" },
+        { id: 1, name: "Straw (<30d before cultivation)", cfoa: 1.00, range: "0.85 - 1.17", key: "Straw_short" },
+        { id: 2, name: "Straw (>30d before cultivation)", cfoa: 0.19, range: "0.11 - 0.28", key: "Straw_long" },
+        { id: 3, name: "Compost", cfoa: 0.17, range: "0.09 - 0.29", key: "Compost" },
+        { id: 4, name: "Farm yard manure", cfoa: 0.21, range: "0.15 - 0.28", key: "Farm_yard_manure" },
+        { id: 5, name: "Green manure", cfoa: 0.45, range: "0.36 - 0.57", key: "Green_manure" },
     ];
     const weatherData = [
         {
             season: "Winter–Spring",
+            key: "dong-xuan",
             stages: [
                 {
                     stage: 1,
@@ -76,6 +78,7 @@ export default function RiceGameProvider({ children }) {
         },
         {
             season: "Summer–Autumn",
+            key: "he-thu",
             stages: [
                 {
                     stage: 1,
@@ -117,6 +120,7 @@ export default function RiceGameProvider({ children }) {
         },
         {
             season: "Autumn–Winter",
+            key: "thu-dong",
             stages: [
                 {
                     stage: 1,
@@ -169,6 +173,7 @@ export default function RiceGameProvider({ children }) {
         season, setSeason,
         fertilizers, setFertilizers,
         water, setWater,
+        sessionKey, setSessionKey,
         stage, setStage,
         chartOpen, setChartOpen,
         methods, stages, stageColors, amendments, seasons, weatherData,

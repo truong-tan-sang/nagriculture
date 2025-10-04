@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     Box,
     Button,
@@ -11,6 +11,10 @@ import {
     InputLabel,
     Select,
     MenuItem,
+    Dialog,
+    DialogContent,
+    DialogActions,
+    CircularProgress,
 } from "@mui/material";
 import {
     Timeline,
@@ -42,19 +46,95 @@ export default function StepPlay() {
         methods,
         fertilizers,
         setFertilizers,
+        sessionKey,
     } = useRiceGame();
     const stockFertilizers = [
-        { id: 1, name: "Urea" },
-        { id: 2, name: "Diammonium phosphate" },
-        { id: 3, name: "Ammonium sulphate" },
-        { id: 4, name: "Ammonium chloride" },
-        { id: 5, name: "Ammonium nitrate" },
-        { id: 6, name: "Superphosphate" },
-        { id: 7, name: "Kali" },
-        { id: 8, name: "NPK (Stage 2 – De Nhanh)" },
-        { id: 9, name: "NPK (Stage 3 – Lam Rong)" },
+        { id: 1, name: "Urea", key: "Urea" },
+        { id: 2, name: "Diammonium phosphate", key: "Diammonium phosphate" },
+        { id: 3, name: "Ammonium sulphate", key: "Ammonium sulphate" },
+        { id: 4, name: "Ammonium chloride", key: "Ammonium chloride" },
+        { id: 5, name: "Ammonium nitrate", key: "Ammonium nitrate" },
+        { id: 6, name: "Superphosphate", key: "Superphosphate" },
+        { id: 7, name: "Kali", key: "Kali" },
+        { id: 8, name: "NPK (Stage 2 – De Nhanh)", key: "NPK in stage 2 (NPK_de_nhanh)" },
+        { id: 9, name: "NPK (Stage 3 – Lam Rong)", key: "NPK in stage 3 (NPK_lam_rong)" },
     ];
 
+    const [stageInfoOpen, setStageInfoOpen] = useState(false);
+    const [stageInfo, setStageInfo] = useState<any>(null);
+    const [loadingInfo, setLoadingInfo] = useState(false);
+    // 📦 Placeholder: Gọi API (ở đây giả lập)
+    const fetchStageInfo = async (nextStage: number) => {
+        setLoadingInfo(true);
+        setStageInfoOpen(true);
+
+        try {
+            // ✅ Lấy thông tin hiện tại
+            const fertilizer = fertilizers[stage];
+            const irrigationLevel = water;
+
+            // ✅ Tạo payload đúng định dạng
+            const payload = {
+                player_action: {
+                    fertilization: {
+                        organic_fertilizer: { [fertilizers[0].name]: fertilizers[0].amount }, // bạn có thể sửa logic theo stage
+                        synthetic_fertilizer: stage === 0
+                            ? {"urea":0}
+                            : { [fertilizer?.name || "urea"]: fertilizer?.amount || 0 },
+                    },
+                    irrigation: { level: irrigationLevel },
+                },
+            };
+
+            // ✅ Gửi POST API thật
+            const res = await fetch(
+                `https://monnas-backend.onrender.com/game-sessions/${sessionKey}/play-stage`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const data = await res.json();
+
+            // ✅ Nhận dữ liệu phản hồi từ backend (ví dụ: điều kiện môi trường mới)
+            setStageInfo({
+                title: `Kết quả sau khi hoàn thành giai đoạn ${stage + 1}`,
+                temp: data.environment?.temperature ?? Math.round(20 + Math.random() * 10),
+                rain: data.environment?.rainfall ?? Math.round(50 + Math.random() * 50),
+                soil:
+                    data.recommendation ||
+                    "Độ ẩm cao, thích hợp bón phân kali",
+            });
+        } catch (err) {
+            console.error("❌ Lỗi khi gọi API play-stage:", err);
+            setStageInfo({
+                title: "Không thể tải thông tin giai đoạn",
+                temp: "-",
+                rain: "-",
+                soil: "Vui lòng thử lại.",
+            });
+        } finally {
+            setLoadingInfo(false);
+        }
+    };
+
+    // 🧭 Khi nhấn nút “Tiếp tục”
+    const handleNextStage = async () => {
+        if (stage < 4) {
+            await fetchStageInfo(stage + 1);
+        }
+    };
+
+    // 🆗 Khi người chơi xác nhận trong overlay
+    const handleConfirmNext = () => {
+        setStage((s) => Math.min(4, s + 1));
+        setStageInfoOpen(false);
+        setStageInfo(null);
+    };
     return (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", p: 2, width: "100%", zIndex: 1 }}>
             {/* Top info */}
@@ -91,7 +171,7 @@ export default function StepPlay() {
 
             </Box>
             {/* Middle content */}
-            <Box sx={{ flex: 1, position: "relative", width: "100%" , mt: -5}}>
+            <Box sx={{ flex: 1, position: "relative", width: "100%", mt: -5 }}>
                 {/* Timeline */}
                 <Box sx={{ position: "absolute", right: 20, top: "50%", transform: "translateY(-40%)" }}>
                     <Timeline position="right" sx={{ minWidth: 400 }}>
@@ -161,9 +241,9 @@ export default function StepPlay() {
             <Box sx={{ mt: 2 }}>
 
                 <Grid container spacing={1} alignItems="center" justifyContent="center"
-                sx ={{
-                    px:10
-                }}>
+                    sx={{
+                        px: 10
+                    }}>
                     {/* Cột 1: Dropdown chọn phân bón */}
                     <Grid size={6}>
 
@@ -187,7 +267,7 @@ export default function StepPlay() {
                                     );
                                     setFertilizers((prev) =>
                                         prev.map((f, i) =>
-                                            i === stage ? selected || { ...f, name: val as number } : f
+                                            i === stage ? { ...f, name: selected?.key as number } : f
                                         )
                                     );
                                 }}
@@ -262,27 +342,60 @@ export default function StepPlay() {
                     >
                         Trở lại
                     </Button>
+
                     <Button
                         variant="contained"
-                        onClick={() => setStage((s) => Math.min(4, s + 1))}
+                        onClick={handleNextStage}
                         disabled={stage === 4}
                     >
                         Tiếp tục
                     </Button>
-                    <Button variant="outlined" onClick={() => {
-                        setStep(0);
-                        setStage(0);
-                        setWater(5);
-                        setFertilizers((prev) =>
-                            prev.map((f, i) =>
-                                i === stage ? { ...f, amount: 0 } : f
-                            )
-                        );
-                    }}>
+
+                    <Button
+                        variant="outlined"
+                        onClick={() => {
+                            setStep(0);
+                            setStage(0);
+                            setWater(5);
+                            setFertilizers((prev) =>
+                                prev.map((f, i) => (i === stage ? { ...f, amount: 0 } : f))
+                            );
+                        }}
+                    >
                         Chơi lại
                     </Button>
+
                 </Box>
             </Box>
+            <Dialog open={stageInfoOpen} onClose={() => setStageInfoOpen(false)} maxWidth="sm" fullWidth>
+                <DialogContent sx={{ textAlign: "center", py: 4 }}>
+                    {loadingInfo ? (
+                        <>
+                            <CircularProgress />
+                            <Typography mt={2}>Đang tải thông tin giai đoạn...</Typography>
+                        </>
+                    ) : (
+                        stageInfo && (
+                            <>
+                                <Typography variant="h5" gutterBottom>
+                                    {stageInfo.title}
+                                </Typography>
+                                <Typography>🌡️ Nhiệt độ: {stageInfo.temp}°C</Typography>
+                                <Typography>🌧️ Lượng mưa: {stageInfo.rain} mm</Typography>
+                                <Typography>🌱 Gợi ý: {stageInfo.soil}</Typography>
+                            </>
+                        )
+                    )}
+                </DialogContent>
+                {!loadingInfo && (
+                    <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+                        <Button variant="contained" onClick={handleConfirmNext}>
+                            OK – Sang giai đoạn mới
+                        </Button>
+                    </DialogActions>
+                )}
+            </Dialog>
+
 
             <ChartOverlay open={chartOpen} onClose={() => setChartOpen(false)} />
         </Box>
