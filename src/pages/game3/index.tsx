@@ -5,7 +5,7 @@ import { PrettoSlider } from "@/components/PrettoSlider";
 import IsometricCube from "@/components/IsometricCube";
 import dynamic from "next/dist/shared/lib/dynamic";
 import ChartOverlay from "@/components/ChartOverlay";
-import { neumorphism } from "@/components/ThemeProvider";
+import { BevelButton, neumorphism } from "@/components/ThemeProvider";
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 export default function RiceGame() {
@@ -21,6 +21,9 @@ export default function RiceGame() {
   const [fertilizer3, setFertilizer3] = useState(0);
   const [water, setWater] = useState(5);
   const [stage, setStage] = useState(0); // 0-3 giai đoạn
+  const methods = ['Alternate Wetting and Drying (AWD)', 'Traditional method', 'Regular rainfed'];
+  const stages = ["Seeding", "Growth", "Flowering", "Harvest"];
+  const stageColors = ["#FFF59D", "#FFD54F", "#FFB300", "#FF8F00"];
   const amendments = [
     { name: "Straw (<30d before cultivation)", cfoa: 1.00, range: "0.85 - 1.17" },
     { name: "Straw (>30d before cultivation)", cfoa: 0.19, range: "0.11 - 0.28" },
@@ -38,223 +41,286 @@ export default function RiceGame() {
   return (
     <Box sx={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      // background: season?.name === 'Thu Đông' ? 'linear-gradient(0, #63e0cfff, #2f5fabff)' : season?.name === 'Hè Thu' ? 'linear-gradient(0, #73cde1, #fdd490)' : 'linear-gradient(0, #fbc2eb, #a6c1ee)',
       minHeight: '100vh'
     }}>
       <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 0 }}>
         <MapView />
       </Box>
-<Box
+
+      <Box
         sx={{
-          position: 'absolute',
+          position: 'absolute', // Ensures it's above the map container
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          overflow: 'visible',
-          animation: 'floatUpDown 6s ease-in-out infinite',
+          background: 'rgba(230, 230, 255, 0.8)',
+          borderRadius: 3,
+          fontSize: 12,
+          zIndex: 1000, // Make sure it's above the map tiles
+          width: '95%',
+          height: '95%',
+          display: 'flex', // Centering content inside the overlay
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(2px)',
         }}
       >
-        <IsometricCube
-          overlay={{
-            enabled: true,
-            thickness: water / 400,
-            colors: { top: '#77dcf5e6', left: '#5ecefea3', right: '#3496afc3' },
-          }}
-        />
-      </Box>
-      {/* Chọn hình thức canh tác */}
-      {step === 0 && (
-        <Box sx={{
-          position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '100%', overflow: 'auto', p: 2,
-        }}>
-          <Typography variant="h4" gutterBottom mb={4} align="center">
-            Choose cultivation method:
-          </Typography>
-          <Grid container spacing={2} justifyContent="center">
-            {['Alternate Wetting and Drying (AWD)', 'Traditional method', 'Regular rainfed'].map((m, i) => (
-              <Grid key={i} size={4} >
-                <Card onClick={() => { setMethod(m); setStep(1); }} 
-                  className='neumorphic'
-                sx={{ 
-                  cursor: 'pointer', '&:hover': { boxShadow: 6 }, 
-                  height: '100%',
-                  backgroundColor: neumorphism.card,
-                  }}>
-                  
-                  <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
-                    <Typography variant="h6" align="center">{m}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      )}
-
-      {/* Chọn vụ mùa */}
-      {step === 1 && (
-        <Box sx={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '50%', overflow: 'auto', p: 2,
-        }}>
-          <Grid container spacing={2} justifyContent="center" 
+        <Box
           sx={{
-            width: '80%',
-          }}>
-            {seasons.map((s, i) => (
-              <Grid key={i} size={4} >
-                <Box 
-                className='neumorphic'
-                onClick={() => { setSeason(s); setStep(2)}} 
-                sx={{
-                  backgroundColor: neumorphism.card,
-                  cursor: 'pointer', height: '100%',
-                  boxShadow: season?.name === s.name ? 8 : 2,
-                  p:2,
-                  borderRadius: 2,
-                }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    <Typography variant="h6">{s.name}</Typography>
-                    <Typography variant="body2">{s.time}</Typography>
-                  </Box>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-          {/* <Button variant="contained" style={{ marginTop: 20 }} onClick={() => setStep(2)} disabled={!season}>
-            NextStage
-          </Button> */}
-        </Box>
-      )}
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            overflow: 'visible',
+          }}
+        >
+          {/* Shadow behind the cube */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              width: 360,        // width of shadow
+              height: 120,        // height of shadow
+              background: 'rgba(0,0,0,0.3)',
+              borderRadius: '50%',
+              transform: 'translate(-25%,-100%)',
+              filter: 'blur(32px)',
+              zIndex: 0,
+            }}
+          />
 
-      {/* Chọn phân ban đầu */}
-      {step === 2 && (
-        <Box>
+          {/* Floating cube */}
+          <Box
+            sx={{
+              animation: 'floatUpDown 6s ease-in-out infinite',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <IsometricCube
+              overlay={{
+                enabled: true,
+                thickness: water / 200,
+                colors: { top: water ? '#77dcf5b0' : 'transparent', left: '#5ecefea3', right: '#3496afc3' },
+              }}
+              growthStage={stage}
+            />
+          </Box>
+        </Box>
+
+        {/* Chọn hình thức canh tác */}
+        {step === 0 && (
           <Box sx={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '100%', overflow: 'auto', p: 2,
           }}>
-            <Typography variant="h5" gutterBottom>
-              Chọn loại phân hữu cơ
+            <Typography variant="h4" gutterBottom mb={4} align="center">
+              Choose cultivation method:
             </Typography>
             <Grid container spacing={2} justifyContent="center">
-              {amendments.map((a, i) => (
-                <Grid size={2} key={i}>
-                  <Button
-                    onClick={() => setFertilizer1(a)}
+              {methods.map((m, i) => (
+                <Grid key={i} size={4} >
+                  <Box onClick={() => { setMethod(m); setStep(1); }}
+                    className='neumorphic'
                     sx={{
-                      cursor: "pointer",
-                      width: '100%',
-                      height: "100%",
-                      background: neumorphism.card,
-                      // allow wrapping
-                      whiteSpace: "normal",
-                      wordBreak: "break-word",
-                      textAlign: "center",
-                      boxShadow: fertilizer1?.name === a.name ? neumorphism.hover : neumorphism.outline,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        textAlign: "center",
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '100%',
-                      }}
-                    >
-                      <Typography variant="h6">{a.name}</Typography>
-                      <Typography variant="body2">
-                        CFOA: {a.cfoa} (± {a.range})
-                      </Typography>
-                    </Box>
-                  </Button>
+                      ...BevelButton,
+                      cursor: 'pointer', '&:hover': { boxShadow: 6 },
+                      height: '100%',
+                      backgroundColor: neumorphism.card,
+                    }}>
 
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <Typography variant="h6" align="center">{m}</Typography>
+                    </Box>
+                  </Box>
                 </Grid>
               ))}
             </Grid>
-
           </Box>
+        )}
+
+        {/* Chọn vụ mùa */}
+        {step === 1 && (
           <Box sx={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '50%', overflow: 'auto', p: 2,
+            position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '50%', overflow: 'auto', p: 2,
           }}>
-            <Typography gutterBottom>
-              Lượng phân: {fertilizer1A} ton/ha
-            </Typography>
-            <PrettoSlider
-              valueLabelDisplay="auto"
-              aria-label="pretto slider"
-              defaultValue={20}
-              value={fertilizer1A}
-              min={0}
-              max={20}
-              step={0.5}
-              onChange={(e, val) => setfertilizer1A(val)}
-            />
-            <Button variant="contained" style={{ marginTop: 20 }} onClick={() => setStep(3)} disabled={!fertilizer1}>
-              NextStage
-            </Button>
-          </Box>
-        </Box>
-      )}
-
-
-      {/* Giao diện chính */}
-      {step === 3 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', p: 2, width: '100%' }}>
-          {/* Thông tin mùa vụ ở trên cùng */}
-          <Box>
-            <Typography variant="h5">
-              {season.name} - Giai đoạn {stage + 1}/8
-            </Typography>
-          </Box>
-
-          {/* Vùng chính */}
-          <Box sx={{ flex: 1, position: 'relative', width: '100%' }}>
-            {/* Timeline bên phải */}
-            <Box sx={{ position: 'absolute', right: 20, top: '50%', transform: 'translateY(-40%)' }}>
-              <Timeline position="right" sx={{ minWidth: 400 }}>
-                {[...Array(8)].map((_, i) => (
-                  <TimelineItem key={i}>
-                    <TimelineSeparator>
-                      <TimelineDot color={i === stage ? 'primary' : 'grey'} />
-                      {i < 7 && <TimelineConnector />}
-                    </TimelineSeparator>
-                    <TimelineContent>
-                      <Typography >Giai đoạn {i + 1}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {i % 2 === 0 ? 'Điều chỉnh nước' : 'Bón phân'}
-                      </Typography>
-                    </TimelineContent>
-                  </TimelineItem>
-                ))}
-              </Timeline>
-            </Box>
-            <Box
+            <Grid container spacing={2} justifyContent="center"
               sx={{
-                position: "absolute",
-                top: "50%",
-                left: 20,
-                transform: "translateY(-50%)",
-                zIndex: 10,
-              }}
-            >
-              <Button
-                className="neumorphic"
-                variant="contained"
-                sx={{ borderRadius: "50%", width: 80, height: 80 }}
-                onClick={() => setChartOpen(true)}
-              >
-                📊
+                width: '80%',
+              }}>
+              {seasons.map((s, i) => (
+                <Grid key={i} size={4} >
+                  <Box
+                    className='neumorphic'
+                    onClick={() => { setSeason(s); setStep(2) }}
+                    sx={{
+                      ...BevelButton,
+                      cursor: 'pointer', height: '100%',
+                      boxShadow: season?.name === s.name ? 8 : 2,
+                    }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <Typography variant="h6">{s.name}</Typography>
+                      <Typography variant="body2">{s.time}</Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+            {/* <Button variant="contained" style={{ marginTop: 20 }} onClick={() => setStep(2)} disabled={!season}>
+            NextStage
+          </Button> */}
+          </Box>
+        )}
+
+        {/* Chọn phân ban đầu */}
+        {step === 2 && (
+          <Box>
+            <Box sx={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '100%', overflow: 'auto', p: 2,
+            }}>
+              <Typography variant="h5" gutterBottom>
+                Chọn loại phân hữu cơ
+              </Typography>
+              <Grid container spacing={2} justifyContent="center">
+                {amendments.map((a, i) => (
+                  <Grid size={2} key={i}>
+                    <Button
+                      onClick={() => setFertilizer1(a)}
+                      sx={{
+                        ...BevelButton,
+                        cursor: "pointer",
+                        width: '100%',
+                        height: "100%",
+                        // allow wrapping
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                        textAlign: "center",
+                        boxShadow: fertilizer1?.name === a.name ? neumorphism.hover : neumorphism.outline,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          textAlign: "center",
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: '100%',
+                        }}
+                      >
+                        <Typography variant="h6">{a.name}</Typography>
+                        <Typography variant="body2">
+                          CFOA: {a.cfoa} (± {a.range})
+                        </Typography>
+                      </Box>
+                    </Button>
+
+                  </Grid>
+                ))}
+              </Grid>
+
+            </Box>
+            <Box sx={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', height: '30%', width: '50%', overflow: 'auto', p: 2,
+            }}>
+              <Typography gutterBottom>
+                Lượng phân: {fertilizer1A} ton/ha
+              </Typography>
+              <PrettoSlider
+                valueLabelDisplay="auto"
+                aria-label="pretto slider"
+                defaultValue={20}
+                value={fertilizer1A}
+                min={0}
+                max={20}
+                step={0.5}
+                onChange={(e, val) => setfertilizer1A(val)}
+              />
+              <Button variant="contained" style={{ marginTop: 20 }} onClick={() => setStep(3)} disabled={!fertilizer1}>
+                NextStage
               </Button>
             </Box>
           </Box>
+        )}
 
-          {/* Controls ở dưới */}
-          <Box sx={{ mt: 2 }}>
-            {stage % 2 === 0 ? (
+
+        {/* Giao diện chính */}
+        {step === 3 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', p: 2, width: '100%' }}>
+            {/* Thông tin mùa vụ ở trên cùng */}
+            <Box>
+              <Typography variant="h5">
+                {season.name} - Giai đoạn {stage + 1}/4
+              </Typography>
+            </Box>
+
+            {/* Vùng chính */}
+            <Box sx={{ flex: 1, position: 'relative', width: '100%' }}>
+              {/* Timeline bên phải */}
+              <Box sx={{ position: 'absolute', right: 20, top: '50%', transform: 'translateY(-40%)' }}>
+                <Timeline position="right" sx={{ minWidth: 400 }}>
+                  {stages.map((label, i) => (
+                    <TimelineItem key={i}>
+                      <TimelineSeparator>
+                        <TimelineDot
+                          sx={{
+                            bgcolor: stageColors[i],
+                            boxShadow:
+                              i === stage
+                                ? "0 0 12px 4px rgba(255, 193, 7, 0.8)"
+                                : "none",
+                            transition: "0.3s",
+                          }}
+                        />
+                        {i < stages.length - 1 && (
+                          <TimelineConnector
+                            sx={{
+                              backgroundColor: stageColors[i + 1],
+                              height: 40,
+                            }}
+                          />
+                        )}
+                      </TimelineSeparator>
+
+                      <TimelineContent>
+                        <Typography>{label}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {/* {i % 2 === 0 ? 'Watering' : 'Fertilizing'} */}
+                        </Typography>
+                      </TimelineContent>
+                    </TimelineItem>
+                  ))}
+                </Timeline>
+              </Box>
+
+              <Box
+                className="neumorphic"
+                sx={{
+                  ...BevelButton,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'left',
+                  justifyContent: 'center',
+                  width: 'auto',
+                  height: 'auto',
+                  position: "absolute",
+                  top: "50%",
+                  left: 40,
+                  transform: "translateY(-50%)",
+                  zIndex: 10,
+                  p: 4,
+                }}
+              >
+                <Typography variant="h6">📈</Typography>
+                <Typography variant="h6">temp: 123</Typography>
+                <Typography variant="h6">moist: 123</Typography>
+                <Typography variant="h6">light: 123</Typography>
+              </Box>
+            </Box>
+
+            {/* Controls ở dưới */}
+            <Box sx={{ mt: 2 }}>
               // Slider nước
               <Box
                 sx={{
@@ -276,7 +342,7 @@ export default function RiceGame() {
                 />
                 <Typography variant="body2">{water} cm</Typography>
               </Box>
-            ) : (
+              ) : (
               // Slider phân bón
               <Box
                 sx={{
@@ -328,25 +394,26 @@ export default function RiceGame() {
                   </Box>
                 )}
               </Box>
-            )}
 
-            {/* Nút điều hướng */}
-            <Box sx={{ mt: 2 }}>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  if (stage < 7) setStage(stage + 1);
-                  else setStep(4);
-                }}
-              >
-                {stage === 7 ? 'Hoàn thành mùa vụ' : 'Qua giai đoạn tiếp theo'}
-              </Button>
+              {/* Nút điều hướng */}
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (stage < 4) setStage(stage + 1);
+                    else setStep(4);
+                  }}
+                >
+                  {stage === 4 ? 'Hoàn thành mùa vụ' : 'Qua giai đoạn tiếp theo'}
+                </Button>
+              </Box>
             </Box>
+            {chartOpen && (<ChartOverlay {...{ chartOpen, setChartOpen }} />)}
           </Box>
-          {chartOpen && (<ChartOverlay {...{ chartOpen, setChartOpen }} />)}
-        </Box>
 
-      )}
+        )}
+
+      </Box>
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const COS30 = Math.sqrt(3) / 2;
 const SIN30 = 0.5;
@@ -8,36 +8,58 @@ function project([X, Y, Z]) {
   const y = (X + Y) * SIN30 - Z;
   return [x, y];
 }
-const riceStages = [
-  { height: 0.2, color: "#9be7a5" }, // stage 0: mạ mới
-  { height: 0.3, color: "#7fd487" }, // stage 1
-  { height: 0.45, color: "#4caf50" }, // stage 2
-  { height: 0.6, color: "#388e3c" },  // stage 3
-  { height: 0.8, color: "#2e7d32" },  // stage 4
-  { height: 1.0, color: "#66bb6a" },  // stage 5
-  { height: 1.1, color: "#d4af37" },  // stage 6
-  { height: 1.2, color: "#c9a227" },  // stage 7: lúa chín
-];
-function pointsToString(points) {
-  return points.map((p) => p.join(',')).join(' ');
+function darkenColor(hex, amount = 0.3) {
+  let c = hex.replace("#", "");
+  if (c.length === 3) c = c.split("").map((ch) => ch + ch).join("");
+  const num = parseInt(c, 16);
+  let r = (num >> 16) & 255;
+  let g = (num >> 8) & 255;
+  let b = num & 255;
+  r = Math.max(0, Math.min(255, r * (1 - amount)));
+  g = Math.max(0, Math.min(255, g * (1 - amount)));
+  b = Math.max(0, Math.min(255, b * (1 - amount)));
+  return `rgb(${r}, ${g}, ${b})`;
 }
+// Color + height presets for the 4 visible stages
+const riceStages = [
+  { height: 0.0, color: "transparent" }, // 0: bare field
+  { height: 0.3, color: "#9be7a5" },     // 1: seedlings (light green)
+  { height: 0.6, color: "#4caf50" },     // 2: growing (green)
+  { height: 0.9, color: "#2e7d32" },     // 3: mature (deep green)
+  { height: 1.1, color: "#d4af37" },     // 4: ripe (gold)
+];
+
+function pointsToString(points) {
+  return points.map((p) => p.join(",")).join(" ");
+}
+
 export default function IsometricCube({
   size = 360,
   side = 180,
   thickness = 0.3,
-  riceCount = 60, 
-  colors = { top: '#a96c4f', left: '#d5a888', right: '#845751' },
-  overlay = { enabled: true, thickness: 0.05, colors: { top: 'rgba(119, 220, 245, 0.9)', left: 'rgba(94, 206, 250, 0.9)', right: 'rgba(52, 150, 175, 0.9)' } },
-  stroke = '#0f172a',
+  growthStage = 0, // 👈 new prop
+  colors = {
+    top: "#a96c4f",
+    left: "#d5a888",
+    right: "#845751",
+  },
+  overlay = {
+    enabled: true,
+    thickness: 0.05,
+    colors: {
+      top: "rgba(119, 220, 245, 0.25)",
+      left: "rgba(94, 206, 250, 0.7)",
+      right: "rgba(52, 150, 175, 0.7)",
+    },
+  },
+  stroke = "#0f172a",
   strokeWidth = 0,
-  className = '',
+  className = "",
 }) {
   const s = side;
   const h = Math.max(0, Math.min(2, thickness)) * side;
-  // overlay.colors = { top:`rgba(119, 220, 245, ${thickness*5})`, left: `rgba(94, 206, 250, ${thickness*5})`, right: `rgba(52, 150, 175, ${thickness*5})` };
 
-  // bottom (Z=0): A(0,0,0), B(s,0,0), C(s,s,0), D(0,s,0)
-  // top    (Z=h): E(0,0,h), F(s,0,h), G(s,s,h), H(0,s,h)
+  // cube points
   const A = [0, 0, -s];
   const B = [s, 0, 0];
   const C = [s, s, 0];
@@ -48,24 +70,18 @@ export default function IsometricCube({
   const H = [0, s, h];
 
   const pts = [A, B, C, D, E, F, G, H].map(project);
-
   const allX = pts.map((p) => p[0]);
   const allY = pts.map((p) => p[1]);
-
   const minX = Math.min(...allX);
   const minY = Math.min(...allY);
   const maxX = Math.max(...allX);
   const maxY = Math.max(...allY);
-
   const pad = Math.max(8, strokeWidth * 2);
   const viewW = maxX - minX;
   const viewH = maxY - minY;
-
   const scale = (size - pad * 2) / Math.max(viewW, viewH);
-
-  // offset để căn giữa
-  const offsetX = (size - (viewW * scale)) / 2;
-  const offsetY = (size - (viewH * scale)) / 2;
+  const offsetX = (size - viewW * scale) / 2;
+  const offsetY = (size - viewH * scale) / 2;
 
   const transform = (p) => [
     (p[0] - minX) * scale + offsetX,
@@ -73,11 +89,11 @@ export default function IsometricCube({
   ];
 
   const [tA, tB, tC, tD, tE, tF, tG, tH] = pts.map(transform);
-
   const topPoints = pointsToString([tE, tF, tG, tH]);
   const leftPoints = pointsToString([tE, tH, tD, tA]);
   const rightPoints = pointsToString([tF, tG, tC, tB]);
 
+  // overlay
   let overlayPolygons = null;
   if (overlay.enabled) {
     const oh = overlay.thickness * side;
@@ -85,70 +101,85 @@ export default function IsometricCube({
     const F2 = [s, 0, h + oh];
     const G2 = [s, s, h + oh];
     const H2 = [0, s, h + oh];
-
-    const [tE2, tF2, tG2, tH2] = [E2, F2, G2, H2].map((p) => transform(project(p)));
-
+    const [tE2, tF2, tG2, tH2] = [E2, F2, G2, H2].map((p) =>
+      transform(project(p))
+    );
     const overlayTop = pointsToString([tE2, tF2, tG2, tH2]);
     const overlayLeft = pointsToString([tG2, tH2, tH, tG]);
     const overlayRight = pointsToString([tF2, tG2, tG, tF]);
-
     overlayPolygons = (
       <>
-        <polygon points={overlayLeft} fill={overlay.colors.left} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-        <polygon points={overlayRight} fill={overlay.colors.right} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-        <polygon points={overlayTop} fill={overlay.colors.top} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
+        <polygon
+          points={overlayLeft}
+          fill={overlay.colors.left}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        <polygon
+          points={overlayRight}
+          fill={overlay.colors.right}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        <polygon
+          points={overlayTop}
+          fill={overlay.colors.top}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
       </>
     );
   }
-  function simpleRandom(x, y, seed = 0) {
-  return ((x * 31 + y * 17 + seed * 13) % 1000) / 1000; // trả về 0..1
-}
-const ricePolygons = [];
-const oh = overlay.thickness * side;
-const riceHeight = side * 0.25 - overlay.thickness;   // chiều cao trung bình lúa
-const riceSpacing = side * 0.025;  // khoảng cách giữa các bụi lúa
-const ditchEvery = 4;             // sau mỗi 4 hàng sẽ có 1 mương
 
-let rowIndex = 0;
-for (let y = riceSpacing / 2; y < s; y += riceSpacing) {
-  rowIndex++;
+  // 🌾 Rice generation
+  const ricePolygons = [];
+  const oh = overlay.thickness * side;
+  const stageData = riceStages[Math.max(0, Math.min(4, growthStage))];
+  const riceHeight = side * stageData.height/2;
+  const riceColor = stageData.color;
+  const strokeColor = darkenColor(riceColor, 0.4); // ✅ make stroke darker
+  const riceSpacing = side * 0.025;
+  const ditchEvery = 4;
 
-  // nếu là hàng mương thì bỏ qua (chừa khoảng trống)
-  if (rowIndex % ditchEvery === 0) continue;
+  if (growthStage > 0) {
+    let rowIndex = 0;
+    for (let y = riceSpacing / 2; y < s; y += riceSpacing) {
+      rowIndex++;
+      if (rowIndex % ditchEvery === 0) continue; // horizontal ditch
+      for (let x = riceSpacing / 2; x < s; x += riceSpacing) {
+        const colIndex = Math.round(x / riceSpacing);
+        if (colIndex % ditchEvery === 0) continue; // vertical ditch
 
-  for (let x = riceSpacing / 2; x < s; x += riceSpacing) {
-    const colIndex = Math.round(x / riceSpacing);
+        const X = x + (Math.random() - 0.5) * riceSpacing * 0.2;
+        const Y = y + (Math.random() - 0.5) * riceSpacing * 0.2;
+        const Z = h + oh;
+        const base = transform(project([X, Y, Z]));
+        const top1 = transform(
+          project([X, Y, Z + riceHeight * (0.9 + Math.random() * 0.3)])
+        );
+        const top2 = transform(
+          project([
+            X + (Math.random() - 0.5) * side * 0.08,
+            Y + (Math.random() - 0.5) * side * 0.08,
+            Z + riceHeight * (0.7 + Math.random() * 0.4),
+          ])
+        );
 
-    // cũng có thể tạo mương dọc bằng cách bỏ qua cột
-    if (colIndex % ditchEvery === 0) continue;
-
-    const X = x + (Math.random() - 0.5) * riceSpacing * 0.2;
-    const Y = y + (Math.random() - 0.5) * riceSpacing * 0.2;
-    const Z = h + oh; // mặt nước
-
-    const base = transform(project([X, Y, Z]));
-    const top1 = transform(
-      project([X, Y, Z + riceHeight * (0.9 + Math.random() * 0.3)])
-    );
-    const top2 = transform(
-      project([
-        X + (Math.random() - 0.5) * side * 0.08,
-        Y + (Math.random() - 0.5) * side * 0.08,
-        Z + riceHeight * (0.7 + Math.random() * 0.4),
-      ])
-    );
-
-    ricePolygons.push(
-      <polygon
-        key={`rice-${x}-${y}`}
-        points={pointsToString([base, top1, top2])}
-        fill="green"
-        stroke="#064e3b"
-        strokeWidth={0.5}
-      />
-    );
+        ricePolygons.push(
+          <polygon
+            key={`rice-${x}-${y}`}
+            points={pointsToString([base, top1, top2])}
+            fill={riceColor}
+            stroke={strokeColor}
+            strokeWidth={0.4}
+          />
+        );
+      }
+    }
   }
-}
 
   return (
     <svg
@@ -158,25 +189,55 @@ for (let y = riceSpacing / 2; y < s; y += riceSpacing) {
       viewBox={`0 0 ${size} ${size}`}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Isometric cube with optional overlay"
-      overflow={"visible"}
+      aria-label="Isometric rice field"
+      overflow="visible"
     >
       <defs>
-        {/* Grainy fertilizer pattern */}
         <pattern id="grainy" patternUnits="userSpaceOnUse" width="8" height="8">
           <circle cx="1" cy="1" r="0.8" fill="rgba(255, 255, 255, 0.6)" />
           <circle cx="5" cy="3" r="0.6" fill="rgba(142, 66, 0, 0.85)" />
           <circle cx="3" cy="6" r="0.5" fill="rgba(255,255,255,0.3)" />
         </pattern>
       </defs>
+
       <g>
-        <polygon points={leftPoints} fill={colors.left} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-        <polygon points={leftPoints} fill={`url(#grainy)`} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-        <polygon points={rightPoints} fill={colors.right} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-        <polygon points={rightPoints} fill={`url(#grainy)`} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-        <polygon points={topPoints} fill={colors.top} stroke={stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
+        <polygon
+          points={leftPoints}
+          fill={colors.left}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        <polygon
+          points={leftPoints}
+          fill="url(#grainy)"
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        <polygon
+          points={rightPoints}
+          fill={colors.right}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        <polygon
+          points={rightPoints}
+          fill="url(#grainy)"
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
+        <polygon
+          points={topPoints}
+          fill={colors.top}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+        />
         {overlayPolygons}
-    {ricePolygons}
+        {ricePolygons}
       </g>
     </svg>
   );
