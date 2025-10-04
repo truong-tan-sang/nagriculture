@@ -20,7 +20,8 @@
     "phaser": "^3.90.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "recharts": "^3.2.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
